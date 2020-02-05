@@ -7,7 +7,7 @@ import networkx as nx
 
 class GraphThresholdActiveLearner(object):
 
-    def __init__(self, graph, tau, gamma, lamda=1e-3, epsilon=1e-6, alpha=None):
+    def __init__(self, graph, tau, gamma, lamda=1e-3, epsilon=1e-6, alpha=None, use_tau_offset=True):
         """
 
         :param graph:
@@ -33,6 +33,7 @@ class GraphThresholdActiveLearner(object):
             self.alpha = self.epsilon
         else:
             self.alpha = alpha
+        self.use_tau_offset = use_tau_offset
 
         self.V = nx.linalg.laplacian_matrix(self.graph)
         self.V += speye(self.graph.number_of_nodes()) * self.lamda
@@ -59,11 +60,19 @@ class GraphThresholdActiveLearner(object):
         :type x: float
         """
 
-        self.x[i] += x / self.gamma
+        if self.use_tau_offset:
+            self.x[i] += (x - self.tau) / self.gamma
+        else:
+            self.x[i] += x / self.gamma
+
         self.n[i] += 1
         self.V[i, i] += 1 / self.gamma
 
-        self.mu_hat, info = cg(self.V, self.x, self.mu_hat)
+        if self.use_tau_offset:
+            self.mu_hat, info = cg(self.V, self.x, self.mu_hat - self.tau)
+            self.mu_hat += self.tau
+        else:
+            self.mu_hat, info = cg(self.V, self.x, self.mu_hat)
 
 
 
