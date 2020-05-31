@@ -1,4 +1,4 @@
-# grapl
+# `grapl`
 
 This repository contains the Python implementation of the GrAPL (Graph Anytime Parameter-Light) algorithm [1] and the experiments from the paper.
 
