@@ -14,6 +14,7 @@ from algraph import GraphThresholdActiveLearner as GrAPL
 
 TITLE_SCALE = 1.4
 SMALL_SCALE = 0.7
+MED_SMALL_SCALE = 0.8
 PATH_TO_IMAGES = 'images'
 MARGIN_SCALE = 0.9
 CMAP = colors.LinearSegmentedColormap.from_list('3b1b_bwr', [BLUE, WHITE, RED])
@@ -298,7 +299,6 @@ class MPLScene(Scene):
             #self.play(mpl.animate_update_previous(), run_time=0.2)
             self.play(mpl.animate_grow_last(), run_time=0.2)
 
-
 class TitleScene(Scene):
 
     def construct(self):
@@ -307,49 +307,185 @@ class TitleScene(Scene):
         title.scale(TITLE_SCALE)
         subtitle = TextMobject('AISTATS 2020')
         title_vg = VGroup(title, subtitle)
-        title_vg.arrange(direction=DOWN, center=True)
+        title_vg.arrange(direction=DOWN)
+        title_vg.shift(1.5*UP)
 
         self.play(Write(title_vg))
         self.wait()
 
-        self.play(FadeOut(title_vg))
-        self.wait()
-
-class AuthorScene(Scene):
-
-    def construct(self):
-
         authors = [
-            ['Daniel LeJeune', 'daniel.jpg', 'Rice University'],
+            ['Daniel LeJeune (speaker)', 'daniel.jpg', 'Rice University'],
             ['Gautam Dasarathy', 'gautam.jpg', 'Arizona State University'],
             ['Richard G. Baraniuk', 'baraniuk.jpg', 'Rice University']
         ]
 
-        photos = []
-        author_affils = []
+        photos = Group()
+        author_affils = VGroup()
 
         for i, (author_name, photo_filename, university) in enumerate(authors):
 
             photo = ImageMobject(os.path.join(PATH_TO_IMAGES, photo_filename))
             photo.scale(MARGIN_SCALE)
-            photo.move_to([-3, 2 - 2*i, 0], aligned_edge=RIGHT)
-            photos.append(photo)
+            photo.move_to([-4 + 4*i, -1, 0], aligned_edge=ORIGIN)
+            photos.add(photo)
 
             name_mobject = TextMobject(author_name)
             univ_mobject = TextMobject(university)
-            univ_mobject.scale(SMALL_SCALE)
+            univ_mobject.scale(MED_SMALL_SCALE)
 
             author_affil_vg = VGroup(name_mobject, univ_mobject)
-            author_affil_vg.arrange(direction=DOWN, aligned_edge=LEFT)
-            author_affil_vg.next_to(photo, direction=RIGHT)
-            author_affils.append(author_affil_vg)
+            author_affil_vg.scale(SMALL_SCALE)
+            author_affil_vg.arrange(direction=DOWN, aligned_edge=ORIGIN)
+            # fix alignment of affiliation with dangling letters:
+            author_affil_vg.next_to(photo, direction=DOWN)
+            if i > 0:
+                univ_mobject.move_to(author_affils[0][-1], coor_mask=UP)
+            author_affils.add(author_affil_vg)
 
         self.play(
             LaggedStartMap(
                 lambda x: LaggedStartMap(FadeIn, x, lag_ratio=0.1),
-                Group(Group(*photos), VGroup(*author_affils)),
+                Group(photos, author_affils),
                 lag_ratio=0.5
             )
+        )
+        self.wait()
+
+        self.play(
+            FadeOut(title_vg),
+            LaggedStartMap(
+                lambda x: LaggedStartMap(FadeOut, x, lag_ratio=0.1),
+                Group(*[Group(*z) for z in zip(photos, author_affils)]),
+                lag_ratio=0.1
+            )
+        )
+        self.wait()
+
+class InformalIntroScene(Scene):
+
+    def construct(self):
+
+        title = TextMobject('Thresholding Bandits', substrings_to_isolate=['Thresholding', 'Bandits'])
+        title.move_to(3*UP)
+
+        self.play(Write(title))
+        self.wait()
+
+        positions = [
+            2*UP + 1.7*LEFT,
+            1.8*UP + 2*RIGHT,
+            0.3*UP + 3.7*LEFT,
+            0.2*DOWN + 0.1*RIGHT,
+            3.5*RIGHT,
+            2*DOWN + 2*LEFT,
+            2.1*DOWN + 1.7*RIGHT
+        ]
+        mus = [
+            1.2,
+            0.5,
+            1.1,
+            0.8,
+            0.3,
+            1.3,
+            0.6
+        ]
+        bandits = Group()
+        bandit_mus = Group()
+
+        for i, (pos, mu) in enumerate(zip(positions, mus)):
+            bandit = ImageMobject(os.path.join(PATH_TO_IMAGES, 'slotmachine.png'))
+            bandit.scale(0.5)
+            bandit.move_to(pos)
+            mu_label = TextMobject(r'$\mu_{%d} = %g$' % (i, mu))
+            mu_label.scale(0.5)
+            mu_label.next_to(bandit, DOWN)
+            bandit_mus.add(mu_label)
+            bandits.add(bandit)
+        
+        self.play(
+            LaggedStartMap(FadeIn, bandits, lag_ratio=0.05),
+            LaggedStartMap(FadeIn, bandit_mus, lag_ratio=0.05)
+        )
+        self.wait()
+
+        k_greater_than_1 = TextMobject(r'$\{k : \mu_k > 1\} = \, ?$')
+        k_greater_than_1.scale(0.7)
+        k_greater_than_1.next_to(title, DOWN)
+        k_greater_than_1.shift(4.5*RIGHT)
+
+        self.play(Write(k_greater_than_1))
+        self.wait()
+
+        n_trials = 14
+        np.random.seed(42)
+        sample_order = np.random.permutation(7)
+        for i in range(n_trials):
+            j = sample_order[i % 7]
+            x = np.random.exponential(mus[j])
+            x_label = TextMobject(r'$x_{%d} = %.2f$' % (i, x), color=get_cmap_color((x - mus[j]) + 0.5))
+            x_label.scale(0.5)
+            x_label.next_to(bandit_mus[j], DOWN, buff=SMALL_BUFF)
+            circle = Circle(stroke_color=YELLOW)
+            circle.scale(0.65)
+            circle.move_to(bandits[j])
+            self.play(
+                LaggedStartMap(ShowCreationThenFadeOut, Group(circle, x_label), lag_ratio=0.5)
+            )
+        self.wait()
+
+        edge_connections = [
+            (0, 2),
+            (0, 3),
+            (1, 3),
+            (1, 6),
+            (1, 4),
+            (2, 5),
+            (3, 5),
+            (3, 6)
+        ]
+
+        edges = VGroup()
+
+        for i, j in edge_connections:
+            edge = DashedLine(positions[i], positions[j])
+            edges.add(edge)
+
+        thresholding_tex_old = title.get_part_by_tex('Thresholding')
+        bandits_tex_old = title.get_part_by_tex('Bandits')
+
+        title_graph = TextMobject('Thresholding Graph Bandits', substrings_to_isolate=['Thresholding', 'Graph', 'Bandits'])
+        thresholding_tex_new = title_graph.get_part_by_tex('Thresholding')
+        bandits_tex_new = title_graph.get_part_by_tex('Bandits')
+        graph = title_graph.get_part_by_tex('Graph')
+        graph.set_color(YELLOW)
+
+        title_graph.move_to(title)
+
+        self.bring_to_back(edges)
+        self.play(
+            AnimationGroup(
+                AnimationGroup(
+                    ApplyMethod(thresholding_tex_old.move_to, thresholding_tex_new),
+                    ApplyMethod(bandits_tex_old.move_to, bandits_tex_new),
+                    ShowCreation(edges),
+                    ApplyFunction(lambda x: x, bandits), # keep bandits on top
+                    ApplyFunction(lambda x: x, bandit_mus), # keep bandits on top
+                    lag_ratio=0
+                ),
+                Write(graph),
+                lag_ratio=0.5
+            )
+        )
+        self.wait()
+
+        to_mark = [0, 2, 5]
+        bandits_to_mark = Group(*sum(([bandits[i], bandit_mus[i]] for i in to_mark), []))
+        blue_rect = Rectangle(width=bandits_to_mark.get_width() + 0.3, height=bandits_to_mark.get_height() + 0.3, color=BLUE)
+        blue_rect.move_to(bandits_to_mark)
+
+        self.play(
+            ShowCreation(blue_rect),
+            k_greater_than_1.set_color, BLUE
         )
         self.wait()
 
@@ -636,5 +772,43 @@ class GrAPLvsOthersScene(Scene):
                     AnimationGroup(*(net.mpl.animate_grow_last(run_time=run_time, rate_func=linear) for net in all_nets), run_time=run_time)
                 )
             
+class AcknowledgmentScene(Scene):
 
+    def construct(self):
 
+        arxiv = TextMobject('arXiv:1910.04743', color=BLUE)
+        arxiv.shift(2*UP + 3*LEFT)
+
+        self.play(Write(arxiv))
+        self.wait()
+
+        points_tex = [
+            'lower bound',
+            'connection to dropout',
+            'more'
+        ]
+
+        points = []
+        for tex in points_tex:
+            point = TextMobject(r'$\cdot$ ' + tex)
+            prev_obj = arxiv if len(points) == 0 else points[-1]
+            point.next_to(prev_obj, DOWN, coor_mask=UP)
+            point.move_to(arxiv, aligned_edge=LEFT, coor_mask=RIGHT)
+            point.shift(0.5*RIGHT)
+            points.append(point)
+
+        for point in points:
+            self.play(Write(point))
+            self.wait()
+
+        ack_text = '''
+        This work was supported by NSF grants CCF-1911094, IIS-1838177, and IIS1730574; 
+        ONR grants N00014-18-12571 and N00014- 17-1-2551; AFOSR grant FA9550-18-1-0478; 
+        DARPA grant G001534-7500; and a Vannevar Bush Faculty Fellowship, ONR grant N00014-18-1-2047.
+        '''
+        ack = TextMobject(ack_text)
+        ack.scale(0.7)
+        ack.next_to(points[-1], DOWN, buff=LARGE_BUFF, coor_mask=UP)
+
+        self.play(FadeIn(ack))
+        self.wait()
