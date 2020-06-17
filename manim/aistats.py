@@ -489,6 +489,224 @@ class InformalIntroScene(Scene):
         )
         self.wait()
 
+class FormalIntroScene(Scene):
+
+    def construct(self):
+
+        arms = TextMobject(r'$\nu_i : i \in [N]$')
+        arms.move_to(2.3*UP)
+        self.play(Write(arms))
+        self.wait()
+
+        arms_stats = TextMobject(r'$\mathbb{E}_{X \sim \nu_i}[X] = \mu_i$, $R$-sub-Gaussian')
+        arms_stats.next_to(arms, DOWN)
+        self.play(Write(arms_stats))
+        self.wait()
+
+        superlevelset = TextMobject(r'$\mathcal{S}_\tau = \{i : \mu_i \geq \tau\}$')
+        superlevelset.next_to(arms_stats, DOWN)
+        self.play(Write(superlevelset))
+        self.wait()
+
+        error = TextMobject(r'$\widehat{\mathcal{S}} = \mathcal{S}_\tau$ for $i : |\mu_i - \tau| > \varepsilon$?')
+        error.next_to(superlevelset, DOWN)
+        self.play(Write(error))
+        self.wait()
+
+        policy = TextMobject(r'$(\pi_t)_{t=1}^T, \, \pi_t \in [N]$')
+        policy.next_to(error, DOWN)
+        self.play(Write(policy))
+        self.wait()
+
+        sample = TextMobject(r'$x_t \sim \nu_{\pi_t}$')
+        sample.next_to(policy, DOWN)
+        self.play(Write(sample))
+        self.wait()
+        
+        graph = TextMobject(r'''$
+            (\mathcal{V}, \mathcal{E}, \mathbf{W}) \to \mathbf{L}
+        $''')
+        graph.next_to(sample, DOWN)
+        self.play(Write(graph))
+        self.wait()
+
+        to_fade = Group(
+            arms, arms_stats, superlevelset, error, policy, sample, graph
+        )
+        self.play(FadeOut(to_fade))
+        self.wait()
+
+class AlgorithmScene(Scene):
+
+    def construct(self):
+        
+        grapl_parts = ['Gr', 'A', 'P', 'L']
+        grapl = TextMobject('GrAPL', substrings_to_isolate=grapl_parts)
+        grapl.arrange(RIGHT, coor_mask=RIGHT, buff=0.03)
+        grapl.move_to(3*UP)
+        self.play(Write(grapl))
+        self.wait()
+
+        grapl_expanded = TextMobject('Graph-based Anytime Parameter-Light thresholding algorithm', substrings_to_isolate=grapl_parts)
+        # reorganize into words
+        grapl_reorganized = VGroup(grapl_expanded[:2], grapl_expanded[2:4], grapl_expanded[4:8])
+        for word in grapl_reorganized:
+            word.arrange(RIGHT, buff=0.03, coor_mask=RIGHT, center=False)
+        grapl_reorganized.arrange(RIGHT, buff=0.2, coor_mask=RIGHT)
+        grapl_expanded.scale(0.7)
+        grapl_expanded.move_to(grapl)
+
+        # acronym components are even indices
+        grapl_expanded_acronym = VGroup(*[grapl_expanded[i] for i in range(0, len(grapl_expanded), 2)])
+        grapl_expanded_acronym.set_color(YELLOW)
+        grapl_expanded_filling = VGroup(*[grapl_expanded[i] for i in range(1, len(grapl_expanded), 2)])
+
+        grapl_copy = grapl.copy()
+        self.play(
+            AnimationGroup(
+                AnimationGroup(*[
+                    Transform(a, b) for a, b in zip(grapl, grapl_expanded_acronym)
+                ]),
+                FadeIn(grapl_expanded_filling),
+                lag_ratio=0.5
+            )
+        )
+        self.wait()
+
+        apt_plus_graph = TextMobject('APT + Laplacian regularization')
+        apt_plus_graph.scale(0.7)
+        apt_plus_graph.next_to(grapl_expanded, DOWN)
+        self.play(Write(apt_plus_graph))
+        self.wait()
+
+        self.play(
+            AnimationGroup(
+                FadeOut(apt_plus_graph),
+                FadeOut(grapl_expanded_filling),
+                AnimationGroup(*[
+                    Transform(a, b) for a, b in zip(grapl, grapl_copy)
+                ]),
+                lag_ratio=0.1
+            )
+        )
+        self.wait()
+
+        step_one = TextMobject('1. Estimate distances from threshold', color=BLUE)
+        step_one.move_to(2*UP)
+
+        delta_eq = TextMobject(r'''$
+            \widehat{\Delta}_i^t = |\widehat{\mu}_i^t - \tau| + \varepsilon
+        $''')
+        delta_eq.next_to(step_one, DOWN)
+
+        self.play(Write(step_one))
+        self.play(Write(delta_eq))
+        self.wait()
+
+        epsilon = TextMobject(r'$\varepsilon$', color=YELLOW)
+        epsilon.move_to(delta_eq)
+        epsilon.shift(1.745*RIGHT + 0.075*DOWN)
+
+        self.play(FadeIn(epsilon))
+        self.wait()
+        self.play(FadeOut(epsilon))
+        self.wait()
+
+        step_two = TextMobject('2. Compute confidence proxies', color=BLUE)
+
+        z_eq = TextMobject(r'''$
+            z_i^t = \widehat{\Delta}_i^t \sqrt{n_i^t + \alpha}
+        $''')
+        z_eq.next_to(step_two, DOWN)
+
+        self.play(Write(step_two))
+        self.play(Write(z_eq))
+        self.wait()
+
+        n = TextMobject(r'$n_i^t$', color=YELLOW)
+        n.move_to(z_eq)
+        n.shift(0.6*RIGHT + 0.045*DOWN)
+
+        self.play(FadeIn(n))
+        self.wait()
+        self.play(FadeOut(n))
+        self.wait()
+
+        alpha = TextMobject(r'$\alpha$', color=YELLOW)
+        alpha.move_to(z_eq)
+        alpha.shift(1.625*RIGHT + 0.065*DOWN)
+
+        self.play(FadeIn(alpha))
+        self.wait()
+        self.play(FadeOut(alpha))
+        self.wait()
+
+        step_three = TextMobject('3. Select next arm', color=BLUE)
+        step_three.move_to(2*DOWN)
+
+        pi_eq = TextMobject(r'''$
+            \pi_{t+1} = \underset{i \in [N]}{\mathrm{arg min}} \, z_i^t
+        $''')
+        pi_eq.next_to(step_three, DOWN)
+
+        self.play(Write(step_three))
+        self.play(Write(pi_eq))
+        self.wait()
+
+        mu = TextMobject(r'$\widehat{\mu}^t$', color=YELLOW)
+        mu.move_to(delta_eq)
+        mu.shift(0.25*LEFT + 0.04*DOWN)
+
+        self.play(FadeIn(mu))
+        self.wait()
+
+        to_fade = Group(step_one, delta_eq, step_two, z_eq, step_three, pi_eq)
+        self.play(
+            AnimationGroup(
+                FadeOut(to_fade),
+                ApplyFunction(lambda x: x, mu), # keep on top
+                lag_ratio=0
+            )
+        )
+
+        mu_eq = TextMobject(r'''$
+            \widehat{\boldsymbol{\mu}}^t 
+            = \underset{\boldsymbol{\mu}}{\mathrm{arg min}} \, 
+            \sum_{s = 1}^t (x_s - \mu_{\pi_s})^2
+            + \gamma \boldsymbol{\mu}^\top \mathbf{L}_\lambda \boldsymbol{\mu}
+        $''')
+        bold_mu = TextMobject(r'$\widehat{\boldsymbol{\mu}}^t$', color=YELLOW)
+        bold_mu.move_to(mu_eq, aligned_edge=LEFT)
+        bold_mu.shift(0.175*UP)
+
+        self.play(Transform(mu, bold_mu))
+        self.play(Write(mu_eq))
+        self.remove(mu)
+        self.wait()
+
+        laplacian_norm = TextMobject(r'''$
+            \boldsymbol{\mu}^\top \mathbf{L}_\lambda \boldsymbol{\mu}
+        $''', color=YELLOW)
+        laplacian_norm.move_to(mu_eq, aligned_edge=RIGHT)
+        laplacian_norm.shift(0.16*UP)
+
+        laplacian_eq = TextMobject(r'''$
+            \boldsymbol{\mu}^\top \mathbf{L}_\lambda \boldsymbol{\mu}
+            = \sum_{(i, j) \in \mathcal{E}} w_{ij} (\mu_i - \mu_j)^2 + \lambda || \boldsymbol{\mu} ||_2^2
+        $''')
+        laplacian_eq.next_to(mu_eq, DOWN)
+        laplacian_norm_copy = laplacian_norm.copy()
+        laplacian_norm_copy.move_to(laplacian_eq, aligned_edge=LEFT)
+        laplacian_norm_copy.shift(0.07*UP)
+
+        self.play(FadeIn(laplacian_norm))
+        self.wait()
+        
+        self.play(Transform(laplacian_norm, laplacian_norm_copy))
+        self.play(Write(laplacian_eq))
+        self.remove(laplacian_norm)
+        self.wait()
+
 class GrAPLLineGraphScene(Scene):
 
     @staticmethod
@@ -516,6 +734,7 @@ class GrAPLLineGraphScene(Scene):
         self.play(ShowCreation(true_net.nodes))
         self.bring_to_back(true_net.edges)
         self.play(FadeIn(true_net.edges))
+        self.wait()
 
         # move true net up and create working net below
 
@@ -537,6 +756,7 @@ class GrAPLLineGraphScene(Scene):
         self.play(ShowCreation(working_net.nodes))
         self.bring_to_back(working_net.edges)
         self.play(FadeIn(working_net.edges))
+        self.wait()
 
         # begin using GrAPL
 
@@ -554,6 +774,8 @@ class GrAPLLineGraphScene(Scene):
             if t == 0:
                 run_time = 1
             elif t < 5:
+                run_time = 0.5
+            elif t == 14:
                 run_time = 0.5
             else:
                 run_time = 0.2
@@ -583,8 +805,110 @@ class GrAPLLineGraphScene(Scene):
                 Transform(working_net.edges, net2.edges),
                 run_time=run_time
             )
+        
+        self.wait()
+
+class TheoremScene(Scene):
+
+    def construct(self):
+
+        theorem = TextMobject(r'\textbf{Theorem 1.}', color=BLUE)
+        theorem.shift(2*UP + 4*LEFT)
+
+        iff = TextMobject(r'If', color=YELLOW)
+        iff.next_to(theorem, DOWN, coor_mask=UP)
+        iff.move_to(theorem, aligned_edge=LEFT, coor_mask=RIGHT)
+        iff.shift(0.5*RIGHT)
+
+        self.play(Write(theorem))
+        self.wait()
+        self.play(Write(iff))
+        self.wait()
+
+        conditions_tex = [
+            r'''$
+                T \geq C \gamma \boldsymbol{\mu}^\top \mathbf{L}_\lambda \boldsymbol{\mu}
+            $'''
+        ]
+        conditions = []
+        for tex in conditions_tex:
+            condition = TextMobject(tex)
+            prev_obj = iff if len(conditions) == 0 else conditions[-1]
+            condition.next_to(prev_obj, DOWN, coor_mask=UP)
+            condition.move_to(iff, aligned_edge=LEFT, coor_mask=RIGHT)
+            condition.shift(0.5*RIGHT)
+            conditions.append(condition)
+
+        for condition in conditions:
+            self.play(Write(condition))
+            self.wait()
+
+        thenn = TextMobject('then', color=YELLOW)
+        thenn.next_to(conditions[-1], DOWN)
+        thenn.move_to(iff, aligned_edge=LEFT, coor_mask=RIGHT)
+
+        self.play(Write(thenn))
+        self.wait()
+
+        result_first = TextMobject(r'''$
+            \mathrm{error} \leq \exp \Big\{ - C' \frac{\gamma}{R^2} T % \Big\} # hack
+        $''')
+        result_first.next_to(thenn, DOWN)
+        result_first.move_to(thenn, aligned_edge=LEFT, coor_mask=RIGHT)
+        result_first.shift(0.5*RIGHT)
+
+        result_dimlog = TextMobject(r'${}+ d_T \log (1 + \frac{T}{\gamma \lambda})$')
+        result_dimlog.move_to(result_first, aligned_edge=LEFT)
+        result_dimlog.shift(5.135*RIGHT)
+
+        result_brace = TextMobject(r'$\Big\{ \hspace{30em} \Big \}$') # hack; can't put just one brace, so put one super far to the left
+        result_brace.move_to(result_dimlog, aligned_edge=RIGHT)
+        result_brace.shift(0.35*RIGHT)
+
+        result = VGroup(result_first, result_dimlog, result_brace)
+        
+        self.play(Write(result))
+        self.wait()
+
+        dimension = TextMobject(r'$d_T$', color=YELLOW)
+        dimension.move_to(result_dimlog)
+        dimension.shift(1.115*LEFT + 0.01*UP)
+
+        self.play(FadeIn(dimension))
+
+        dimension_lt_n = TextMobject(r'$d_T \ll N$')
+        dimension_lt_n.next_to(dimension, DOWN, buff=MED_SMALL_BUFF)
+        dimension_copy = dimension.copy()
+        dimension_copy.move_to(dimension_lt_n, aligned_edge=LEFT)
+
+        self.play(dimension.move_to, dimension_copy)
+        self.play(Write(dimension_lt_n))
+        self.remove(dimension)
+        self.wait()
+
+        t_gt_dim = TextMobject(r'$T \gtrsim d_T$')
+        t_gt_dim.next_to(condition, RIGHT, buff=MED_LARGE_BUFF)
+        t_gt_dim.shift(0.035*DOWN)
+
+        self.play(Write(t_gt_dim))
+        self.wait()
+
+        self.play(
+            AnimationGroup(
+                AnimationGroup(
+                    FadeOut(result_dimlog),
+                    FadeOut(dimension_lt_n),
+                    lag_ratio=0
+                ),
+                ApplyMethod(result_brace.shift, (result_dimlog.get_width() + 0.05)*LEFT),
+                lag_ratio=0.1
+            )
+        )
+        self.wait()
 
 class GrAPLvsOthersScene(Scene):
+    '''warning: takes an hour to compile at 1080p on my machine
+    '''
 
     def construct(self):
 
@@ -657,6 +981,7 @@ class GrAPLvsOthersScene(Scene):
         self.bring_to_front(grapl_net.nodes)
         self.bring_to_back(grapl_net.edges)
         self.play(Write(grapl_net.title))
+        self.wait()
 
         # draw random net
         random_net.group.shift(2*DOWN + 3*LEFT)
@@ -670,6 +995,7 @@ class GrAPLvsOthersScene(Scene):
         self.bring_to_front(random_net.nodes)
         self.bring_to_back(random_net.edges)
         self.play(Write(random_net.title))
+        self.wait()
 
         # draw APT net
         apt_net.group.shift(2*UP + 3*RIGHT)
@@ -683,6 +1009,7 @@ class GrAPLvsOthersScene(Scene):
         self.bring_to_front(apt_net.nodes)
         self.bring_to_back(apt_net.edges)
         self.play(Write(apt_net.title))
+        self.wait()
 
         # draw plot axes
         axes = MPLPlot(
@@ -694,7 +1021,8 @@ class GrAPLvsOthersScene(Scene):
         )
         axes.shift(RIGHT * (apt_net.title.get_center() - axes.title.get_center()))
         axes.shift(UP * (random_net.title.get_center() - axes.title.get_center()))
-        self.play(ShowCreation(axes))
+        self.play(ShowCreation(axes), run_time=2)
+        self.wait()
 
         # initialize and play game
         grapl_net.grapl = GrAPL(G, 0, 100, lamda=1e-3, epsilon=1e-2, alpha=1)
@@ -771,21 +1099,22 @@ class GrAPLvsOthersScene(Scene):
                     AnimationGroup(*(VFadeInThenOut(net.to_highlight, run_time=run_time, rate_func=squish_rate_func(there_and_back, 0, 0.5)) for net in all_nets), run_time=run_time),
                     AnimationGroup(*(net.mpl.animate_grow_last(run_time=run_time, rate_func=linear) for net in all_nets), run_time=run_time)
                 )
+        self.wait()
             
 class AcknowledgmentScene(Scene):
 
     def construct(self):
 
-        arxiv = TextMobject('arXiv:1910.04743', color=BLUE)
+        arxiv = TextMobject('arXiv:1905.09190', color=BLUE)
         arxiv.shift(2*UP + 3*LEFT)
 
         self.play(Write(arxiv))
         self.wait()
 
         points_tex = [
-            'lower bound',
-            'connection to dropout',
-            'more'
+            'lower bounds',
+            'optimality and tuning',
+            'experiments'
         ]
 
         points = []
